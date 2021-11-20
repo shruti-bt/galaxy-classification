@@ -62,7 +62,7 @@ def load_data(args, is_train=False):
 
     images, labels = read_data(args.data_path)
     # print(images.shape, labels.shape)
-    train_idx, test_idx = train_test_split(np.arange(labels.shape[0]), test_size=0.1)
+    train_idx, test_idx = train_test_split(np.arange(labels.shape[0]), test_size=0.1, random_state=0)
     train_images, train_labels, test_images, test_labels = images[train_idx], labels[train_idx], images[test_idx], labels[test_idx]
         
     train_dataset = CustomTensorDataset(train_images, train_labels, transform=transform_train)

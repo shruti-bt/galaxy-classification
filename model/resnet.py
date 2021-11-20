@@ -96,5 +96,10 @@ class ResNet(nn.Module):
         return out
 
 
+cfg = {
+    "resnet50": [3, 4, 6, 3],
+    "resnetX": []
+}
+
 def resnet(model_name):
-    return ResNet(Bottleneck, [3, 4, 6, 3])
+    return ResNet(Bottleneck, cfg[model_name])
