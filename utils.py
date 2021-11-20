@@ -7,62 +7,87 @@ Some helper functions for PyTorch, including:
     - msr_init: net parameter initialization.
     - progress_bar: progress bar mimic xlua.progress.
 """
-
+import h5py
 import sys
 import time
+import numpy as np
 
 import torch
 import torchvision
 import torch.nn as nn
 import torch.nn.init as init
 import torchvision.transforms as transforms
+from torch.utils.data import Dataset, TensorDataset, DataLoader
 
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
+def read_data(data_path):
+    with h5py.File(data_path, "r") as f:
+        images = np.array(f["images"])
+        # images = np.transpose(images, (0, 3, 2, 1))
+        labels = np.array(f["ans"])
+    return images, labels
+
+
+class CustomTensorDataset(Dataset):
+    def __init__(self, images, labels, transform=None):
+        self.images = images
+        self.labels = labels
+        self.transform = transform
+
+    def __getitem__(self, index):
+        x = self.images[index] # x.shape == (3, 69, 69)
+        if self.transform:
+            x = self.transform(x)
+        y = self.labels[index]
+        return x, y
+
+    def __len__(self):
+        return len(self.images)
 
 
 def load_data(args, is_train=False):
 
     transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.RandomCrop(69, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip()
     ])
 
     transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.ToTensor()
     ])
 
-    trainset = torchvision.datasets.CIFAR10(
-        root='./data', train=True, 
-        download=True, transform=transform_train
-    )
-    testset = torchvision.datasets.CIFAR10(
-        root='./data', train=False, 
-        download=True, transform=transform_test
-    )
+    images, labels = read_data(args.data_path)
+    # print(images.shape, labels.shape)
+    train_idx, test_idx = train_test_split(np.arange(labels.shape[0]), test_size=0.1)
+    train_images, train_labels, test_images, test_labels = images[train_idx], labels[train_idx], images[test_idx], labels[test_idx]
+        
+    train_dataset = CustomTensorDataset(train_images, train_labels, transform=transform_train)
+    test_dataset = CustomTensorDataset(test_images, test_labels, transform=transform_test)
+    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size) 
+    test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size) 
 
-    trainloader = torch.utils.data.DataLoader(
-        trainset, batch_size=args.batch_size, shuffle=True, num_workers=2) 
-    testloader = torch.utils.data.DataLoader(
-        testset, batch_size=args.batch_size, shuffle=False, num_workers=2)
-    
-    classes = ('plane', 'car', 'bird', 'cat', 'deer',
-           'dog', 'frog', 'horse', 'ship', 'truck')
+    classes = ['Disk, Face-on, No Spiral', 'Smooth, Completely round', 
+                'Smooth, in-between round', 'Smooth, Cigar shaped',
+                'Disk, Edge-on, Rounded Bulge','Disk, Edge-on, Boxy Bulge', 
+                'Disk, Edge-on, No Bulge', 'Disk, Face-on, Tight Spiral', 
+                'Disk, Face-on, Medium Spiral', 'Disk, Face-on, Loose Spiral']
     
     if is_train:
-        return trainloader, testloader
+        return train_dataloader, test_dataloader
     else:
-        return testloader, classes
+        return test_dataloader, classes
 
-def load_model(args):
-    if args.model_name.startswith("vgg"):
+def load_model(model_name):
+    if model_name.startswith("vgg"):
         from model.vgg import vgg
-        return vgg(model_name=args.model_name)
-    elif args.model_name.startswith("resnet"):
+        return vgg(model_name=model_name)
+    elif model_name.startswith("resnet"):
         from model.resnet import resnet
-        return resnet(model_name=args.model_name)
+        return resnet(model_name=model_name)
     else:
         raise ValueError("Provide valid model name.")
 
@@ -194,3 +219,9 @@ def plot_metrics(series, labels, xlabel,
     plt.ylabel(ylabel, fontsize=12)
     plt.legend()
     plt.savefig(save_path, transperent=True, pad_inches=0.1)
+
+
+
+
+
+

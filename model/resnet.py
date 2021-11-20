@@ -96,5 +96,5 @@ class ResNet(nn.Module):
         return out
 
 
-def ResNet50():
+def resnet(model_name):
     return ResNet(Bottleneck, [3, 4, 6, 3])
