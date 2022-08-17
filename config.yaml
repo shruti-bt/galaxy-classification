@@ -1,0 +1,19 @@
+
+# dataset:
+data_path: "./datasets/Galaxy10_DECals.h5"
+batch_size: 32
+img_mean: [0.485, 0.456, 0.406]
+img_std: [0.229, 0.224, 0.225]
+
+model_name: "resnet50"
+
+# trainer:
+resume: false
+num_epochs: 10
+learning_rate: 0.005
+momentum: 0.9
+
+# log and prints
+print_freq: 50
+validation_freq: 1
+  
