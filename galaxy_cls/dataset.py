@@ -1,4 +1,3 @@
-
 import h5py
 import numpy as np
 import torchvision.transforms as transforms
@@ -79,3 +78,4 @@ def load_data(data_path, batch_size, img_mean, img_std, is_train=False):
         return train_dataloader, test_dataloader
     else:
         return test_dataloader, classes
+
